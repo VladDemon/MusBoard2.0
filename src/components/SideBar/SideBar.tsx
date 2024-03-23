@@ -5,10 +5,6 @@ import { Link } from 'react-router-dom';
 import { SiApplemusic } from "react-icons/si";
 import { FaSearch } from "react-icons/fa";
 
-// interface MusicFile {
-//   name: string;
-//   path: string;
-// }
 
 
 const SideBar = () => {

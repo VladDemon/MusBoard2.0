@@ -1,8 +1,9 @@
-import { app, BrowserWindow, ipcMain, contextBridge } from 'electron'
+import { app, BrowserWindow, ipcMain} from 'electron'
 import path from 'node:path'
 import { dialog } from 'electron'
 import fs from 'fs'
 import Store from 'electron-store'
+import url from 'url'
 
 const store = new Store();
 
@@ -11,8 +12,6 @@ interface MusicFile {
   name: string;
   path: string;
 }
-
-
 
 process.env.DIST = path.join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST, '../public')
@@ -32,17 +31,21 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: true,
       contextIsolation: false,
+      webSecurity: false,
     },
   })
+
   win.setTitle("MusBoard");
   win.setMenuBarVisibility(false);
-  // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
   })
 
-
-  
+  win.loadURL(url.format({
+    pathname: path.join(__dirname, 'index.html'),
+    protocol: 'file:',
+    slashes: true
+  }));
 
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
@@ -52,26 +55,6 @@ function createWindow() {
   }
 }
 
-ipcMain.on("save-music-list", (e, musicFiles) => {
-  try {
-    store.set("musicList", musicFiles);
-    console.log("Music list saved successfully:", musicFiles);
-  } catch (error) {
-    console.error("Error saving music list:", error);
-  }
-});
-
-const loadMusicList = () => {
-  return store.get('musicList', []);
-};
-
-ipcMain.on('get-music-list', (event) => {
-  const musicList = loadMusicList();
-  console.log("musicList:", musicList);
-  event.reply('music-list', musicList);
-});
-
-
 ipcMain.on("open-folder-dialog", async (e) => {
   const res = await dialog.showOpenDialog(win, {
     properties: ['openDirectory'],
@@ -79,13 +62,10 @@ ipcMain.on("open-folder-dialog", async (e) => {
   if(!res.canceled){
     const folderPath = res.filePaths[0];
     const musicFiles : MusicFile[] = [];
-    
     const files = fs.readdirSync(folderPath);
     files.forEach((file) => {
       const filePath = path.join(folderPath, file);
       const stats = fs.statSync(filePath);
-
-      
       if (!stats.isDirectory() && (file.endsWith('.mp3') || file.endsWith('.wav') || file.endsWith('.ogg'))) {
         musicFiles.push({
           name: file,
@@ -93,9 +73,34 @@ ipcMain.on("open-folder-dialog", async (e) => {
         });
       }
     });
+    store.set('musicList', musicFiles);
+    console.log(musicFiles);
     e.reply('select-folder', musicFiles);
   }
 })
+
+const loadMusicList = () => {
+  return store.get('musicList', []);
+};
+
+ipcMain.on('get-music-list', (event) => {
+  const musicList = loadMusicList();
+  console.log(musicList);
+  event.reply('music-list', musicList);
+});
+
+ipcMain.on("play-music", async (e, curMus, name) => {
+  if(curMus && name){
+    e.reply('play-music__on', curMus);
+    e.reply('play-music__name', name);
+  }
+})
+ipcMain.on("isMusPlay", async (e, musPlay) => {
+  e.reply('isMusPlaying', musPlay);
+})
+
+
+// app section
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()

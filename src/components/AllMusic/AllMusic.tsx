@@ -1,35 +1,32 @@
 import { ipcRenderer } from "electron";
+import { useEffect, useState } from "react";
+
 
 import { ImHeadphones } from "react-icons/im";
 
 import './AllMusic.scss'
-import { useEffect, useState } from "react";
 
 interface MusicFile {
   name: string;
   path: string;
 }
-
-
 export const AllMusic = () => {
   const [mus, setMus] = useState<MusicFile[]>([]);
   const [searchValue, setSearchValue] = useState<string>("");
-
-
+  const [musIsPlay, setIsMusPlay] = useState<boolean>(false)
 
   const handleAddMus = () : void => {
     ipcRenderer.send('open-folder-dialog')
   }
-
+  
   useEffect(() => {
-    ipcRenderer.on("select-folder", (e, musicFiles) => {
+    ipcRenderer.on("select-folder", (_,musicFiles) => {
+      console.log(musicFiles);
       setMus(musicFiles);
-      ipcRenderer.send('save-music-list', musicFiles);
-      
     });
-    
     ipcRenderer.send('get-music-list');
-    ipcRenderer.on('music-list', (event, files) => {
+    ipcRenderer.on('music-list', (_, files : MusicFile[]) => {
+      console.log(files)
       setMus(files);
     });
 
@@ -39,15 +36,17 @@ export const AllMusic = () => {
       ipcRenderer.removeAllListeners('music-list');
     };
   }, []);
-  
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(e.target.value);
-  }
 
-  const filteredMusic = mus.filter(music => {
+  const filteredMusic : MusicFile[] = mus.filter(music => {
     return music.name.toLowerCase().includes(searchValue.toLowerCase());
   });
 
+  const handlePlayMusic = (path: string, name: string) : void => {
+    setIsMusPlay(true);
+    ipcRenderer.send('isMusPlay', musIsPlay);
+    ipcRenderer.send('play-music', path, name);
+
+  }
 
   return (
     <div className='allMusic'>
@@ -57,10 +56,9 @@ export const AllMusic = () => {
           <input value={searchValue} onChange={(e) => setSearchValue(e.target.value)} placeholder="Search music" type="text" />
         </div>
         <div className="header__btn">
-          <span>Add Your PlayList</span>
-          <button onClick={handleAddMus}>AddMusic</button>
+          <span>Add Your Mus</span>
+          <button onClick={handleAddMus}>Add</button>
         </div>
-
       </header>
       <main>
         <div className="main__music-container">
@@ -68,7 +66,7 @@ export const AllMusic = () => {
             return (
               <div key={index} className="music-container__element">
                 <div className="element__poster">
-                  <img className="poster__img" src="../../../public/defaultPoster.jpg"alt="" />
+                  <img onClick={() => handlePlayMusic(music.path, music.name)} className="poster__img" draggable="false" src={new URL('/defaultPoster.jpg', import.meta.url).toString()} alt="" />
                 </div>
                 {music.name}
               </div>
