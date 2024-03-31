@@ -1,3 +1,6 @@
+![image](https://github.com/VladDemon/MusBoard2.0/assets/113460728/211ea256-e276-40eb-be12-981bb8c2fa47)
+
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
