@@ -7,21 +7,23 @@ import { ImHeadphones } from "react-icons/im";
 import './AllMusic.scss'
 
 interface MusicFile {
-  name: string;
-  path: string;
+  name: string,
+  path: string,
+  index: number,
 }
 export const AllMusic = () => {
   const [mus, setMus] = useState<MusicFile[]>([]);
   const [searchValue, setSearchValue] = useState<string>("");
   const [musIsPlay, setIsMusPlay] = useState<boolean>(false)
 
+
+  // Добавление музыки и сохранение её в state и добавление в Layout/
   const handleAddMus = () : void => {
     ipcRenderer.send('open-folder-dialog')
   }
   
-  useEffect(() => {
+useEffect(() => {
     ipcRenderer.on("select-folder", (_,musicFiles) => {
-      console.log(musicFiles);
       setMus(musicFiles);
     });
     ipcRenderer.send('get-music-list');
@@ -35,18 +37,24 @@ export const AllMusic = () => {
       ipcRenderer.removeAllListeners('save-music-list');
       ipcRenderer.removeAllListeners('music-list');
     };
-  }, []);
+}, []);
+// End //
 
-  const filteredMusic : MusicFile[] = mus.filter(music => {
+
+
+// Фильтр
+const filteredMusic : MusicFile[] = mus.filter(music => {
     return music.name.toLowerCase().includes(searchValue.toLowerCase());
-  });
+});
+// End Filter
 
-  const handlePlayMusic = (path: string, name: string) : void => {
-    setIsMusPlay(true);
+const handlePlayMusic = (name: string, index: number) : void => {
+    setIsMusPlay(!musIsPlay);
+    ipcRenderer.send("musListing", mus)
+    ipcRenderer.send("currMusicIndex", index)
     ipcRenderer.send('isMusPlay', musIsPlay);
-    ipcRenderer.send('play-music', path, name);
-
-  }
+    ipcRenderer.send('play-music', name);
+}
 
   return (
     <div className='allMusic'>
@@ -66,7 +74,7 @@ export const AllMusic = () => {
             return (
               <div key={index} className="music-container__element">
                 <div className="element__poster">
-                  <img onClick={() => handlePlayMusic(music.path, music.name)} className="poster__img" draggable="false" src={new URL('/defaultPoster.jpg', import.meta.url).toString()} alt="" />
+                  <img onClick={() => handlePlayMusic(music.name, index)} className="poster__img" draggable="false" src={new URL('/defaultPoster.jpg', import.meta.url).toString()} alt="" />
                 </div>
                 {music.name}
               </div>

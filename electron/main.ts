@@ -83,21 +83,30 @@ const loadMusicList = () => {
   return store.get('musicList', []);
 };
 
+ipcMain.on("currMusicIndex", (e, curMusIndex) => {
+  e.reply("curMusIndex",curMusIndex);
+})
+
+
 ipcMain.on('get-music-list', (event) => {
   const musicList = loadMusicList();
   console.log(musicList);
   event.reply('music-list', musicList);
 });
 
-ipcMain.on("play-music", async (e, curMus, name) => {
-  if(curMus && name){
-    e.reply('play-music__on', curMus);
+ipcMain.on("play-music", async (e,name) => {
     e.reply('play-music__name', name);
-  }
+  
 })
 ipcMain.on("isMusPlay", async (e, musPlay) => {
   e.reply('isMusPlaying', musPlay);
 })
+
+ipcMain.on("musListing", (e, musList) => {
+  e.reply("musicListing", musList);
+})
+
+
 
 
 // app section
